@@ -1,0 +1,7 @@
+# depslib dependency file v1.0
+1490201921 source:d:\scoala\anul 3\sem ii\adp\matrice\main.c
+	<stdio.h>
+	<stdlib.h>
+	<time.h>
+	<pthread.h>
+
