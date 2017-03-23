@@ -1,0 +1,6 @@
+# depslib dependency file v1.0
+1490208909 source:d:\scoala\anul 3\sem ii\adp\matriceopenmp\openmp.c
+	<stdio.h>
+	<stdlib.h>
+	<omp.h>
+
