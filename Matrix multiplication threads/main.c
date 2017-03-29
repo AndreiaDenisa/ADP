@@ -59,8 +59,8 @@ void main() {
     }
 
     for(i = 0; i < PTHREADS; i++){
-        err = pthread_join(tid[i], NULL); //asteptand sa se alature threadul i fara statut//Funcția pthread_join () suspendă executarea threadului de asteptare pana cand target thread se termina, cu excepția cazului în target thread a terminat deja
-        //Daca va avea succes, funcția pthread_join () va returna 0
+        err = pthread_join(tid[i], NULL); //asteptand sa se alature threadul i fara statut//FuncÈ›ia pthread_join () suspendÄƒ executarea threadului de asteptare pana cand target thread se termina, cu excepÈ›ia cazului Ã®n target thread a terminat deja
+        //Daca va avea succes, funcÈ›ia pthread_join () va returna 0
         if(err == 0) printf("Thread %d joined successfully!\n", i);
         else printf("Thread %d did not join successfully.\n", i);
     }
@@ -95,6 +95,7 @@ void *MatrixMult(void* tid){
 
     if(id < PTHREADS - 1){
         for (i = row_start; i < row_start + rows_per_proc; i++){
+            printf("Thread %d cu linia %d\n",id,i);
             for (j = 0; j < B.c; j++){
                 total = 0;
                 for (k = 0; k < A.c; k++){
@@ -105,6 +106,7 @@ void *MatrixMult(void* tid){
         }
         }else{ //ultimul thread primeste toate liniile ramase
             for (i = row_start; i < row_start + (A.r - ((PTHREADS-1)*rows_per_proc)); i++){
+                printf("Thread %d cu linia %d\n",id,i);
                 for (j = 0; j < B.c; j++){
                     total = 0;
                     for (k = 0; k < A.c; k++){
