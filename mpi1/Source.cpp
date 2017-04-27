@@ -1,48 +1,50 @@
 #include "mpi.h"
 #include <stdio.h>
-#include <stdlib.h>
+#include <cstdlib>
+#include <math.h>
+#define MAXSIZE 100
+#define SNR 10
 
-#define N 15//dimenisunea vectorului
-#define NUMAR 7//numarul cautat
-
-
-int main(int argc, char *argv[])
+int main(int argc, char **argv)
 {
-	int proc, procid, gasit=0;
-	int a[N]={9,8,7,6,5,4,3,2,1,0,7,2,3,7,3};           //vectorul in care caut
-	int b[N];                                 //vectorul in care stochez indicii unde gasesc elementul cautat in vectroul a;
-
-	MPI_Init(&argc, &argv);                   //initializez mpi
-	MPI_Comm_rank(MPI_COMM_WORLD, &procid);   //id-ul unic al procesului curent
-	MPI_Comm_size(MPI_COMM_WORLD, &proc);     //nr total de procese
+	int myid, numprocs;
+	int data[MAXSIZE], i, x, low, high, myresult = 0, result;
 	
 
+	MPI_Init(&argc, &argv);
 
-	for (int i  =(N/proc)*procid; i <= (N/proc)*(procid+1)-1; i++) {     //dimensiunea fiecarui segment..in functie de procese
-		if (a[i] == NUMAR) {                                             //daca gasesc numarul,retin indicele
-			b[gasit] = i ;
-			gasit++;                                                     //de cate ori am gasit numarul-1
+	MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
+	MPI_Comm_rank(MPI_COMM_WORLD, &myid);
 
-		}
-		
-	}	
-	printf("Am gasit elementul de %d ori\n ",gasit);
 
-	if (gasit==0){
-
-		printf("Nu am gasit\n");
+if (0 == myid) {
+	for (i = 0; i < MAXSIZE; i++) {
+		data[i] = rand() %20 + 1;
+		printf("%d   ", data[i]);
 	}
-	else {
+}
+printf("\n");
+/* broadcast data */
+//Broadcasts a message from the process with rank "root" to all other processes of the communicator
+//Use MPI_Broadcast for sending the array
+MPI_Bcast(data, MAXSIZE, MPI_INT, 0, MPI_COMM_WORLD);
 
-		printf("Elementul %d se afla pe pozitiile: ", NUMAR);
-		for (int j = 0; j < gasit; j++){
-			printf("%d  ", b[j]);
-		}
-		printf("\n");
-	
-		
+/* add portion of data */
+x = MAXSIZE / numprocs; /* must be an integer *///impart in bucati vectorul, fiecare proces face o parte
+low = myid * x;
+high = low + x;
+for (i = low; i<high; i++) {
+	if (data[i] == SNR) {
+		myresult = i;
 	}
-	system("pause") ;
-	MPI_Finalize();//se termina programul
+}
+printf("I got %d from %d\n", myresult, myid);
 
+//Combines the values sent by all processes using a predefined operator and places result in the receive buffer of the root process.
+//For computing the maximum position, you need to use MPI_Reduce.
+MPI_Reduce(&myresult, &result, 1, MPI_INT, MPI_MAX, 0, MPI_COMM_WORLD);
+if (0 == myid) {
+	printf("The maximum position is %d.\n", result);
+}
+MPI_Finalize();
 }
