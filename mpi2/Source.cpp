@@ -1,80 +1,75 @@
-#include <mpi.h>
-#include <stdio.h>
-#include <iostream>
 
+#include "mpi.h"
+#include <time.h>
+#include <iostream>
 using namespace std;
 
-
-#define LIMIT     10      
-#define ELEMENT   10
-#define MAXSIZE   100
-
-
+#define SIZE 12
+#define NR 3
 
 int main(int argc, char *argv[])
 {
+	int rank, numProcs, piece, index;
+	int array[SIZE], segment[SIZE], found[SIZE], finalFound[SIZE + 10];
+	bool display = false;
 
-	int   ntasks, rank;
-	int array[100];      
-	int i;
-	int position[LIMIT], positions[LIMIT];        
-	int numOfPositionOfElem;
-	int sendcount;    //number of elements sent to each process 
-	int recvcount;    // number of elements in receive buffer
-	int root;        // rank of sending process 
-	int recvbuf[LIMIT];
-
+	srand((unsigned int)time(NULL));
 
 	MPI_Init(&argc, &argv);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-	MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
+	MPI_Comm_size(MPI_COMM_WORLD, &numProcs);
 
-	printf("Insert the array : \n ");
-	if (0 == rank) {
-		for (i = 0; i < LIMIT; i++)
-			//scanf("%d", array[i]);	
-			cin >> array[i];
+	piece = SIZE / numProcs;
+	if (SIZE % numProcs != 0)
+		++piece;
+
+	MPI_Barrier(MPI_COMM_WORLD);
+
+	if (rank == 0)
+	{
+		cout << "Array elements are:\n";
+		for (int i = 0; i < SIZE; i++)
+		{
+			array[i] = rand() % 5;
+			cout << array[i] << " ";
+			finalFound[i] = -1;
+		}
+	}
+	//trimite bucati egale de date de la root catre toate procesele din com
+	MPI_Scatter(array, piece, MPI_INT, segment, piece, MPI_INT, 0, MPI_COMM_WORLD);
+	cout << "\n\nRank " << rank << " Piece size: " << piece << "\n";
+
+	for (int i = 0; i < piece; i++)
+		found[i] = -1;
+
+	index = 0;
+	for (int i = 0; i < piece; i++)
+	{
+		if (segment[i] == NR)
+		{
+			found[++index] = i + rank * piece;
+		}
+	}
+	//ia  rez de la toate procesele si le pune in vectorul finalFound
+	MPI_Gather(found, piece, MPI_INT, finalFound, piece, MPI_INT, 0, MPI_COMM_WORLD);
+
+	if (rank == 0)
+	{
+		for (int i = 0; i < SIZE + 10; i++)
+		{
+			if (finalFound[i] >= 0)
+			{
+				if (!display)
+					cout << "\n\nNumber found on the follwing position(s): \n";
+				display = true;
+				cout << finalFound[i] << " ";
+			}
+		}
+		if (!display)
+			cout << "\n\nNumber not found.";
 	}
 
-	
-	if (ntasks == LIMIT) {
-		root = 1;
-		sendcount = LIMIT;
-		recvcount = LIMIT;
-
-		//The root process sends equally sized data in the application buffer to all other processes in the communicator
-		//Each process will be sent a different data segment.
-		
-		// Use scatter for sending the array. If the element is found many times, print all its positions.
-		//MPI_Scatter sends chunks of array to different processes
-		MPI_Scatter(array, sendcount, MPI_INT, recvbuf, recvcount, MPI_INT, root, MPI_COMM_WORLD);
-		
-	}
-	
-	numOfPositionOfElem = 0;
-
-	for (i = 0; i < LIMIT; i++) {
-		if (array[i] == ELEMENT) 
-			position[numOfPositionOfElem++] = i;
-	}
-	if (numOfPositionOfElem == 0) {
-		printf("The element does not exist in the array\n");
-	}
-	else {
-		//Use MPI_Gather for sending back the positions
-		//MPI_Gather takes elements from many processes and gathers them to one single process
-
-		//The root process gathers data from all other processes and places it into a receive buffer ordered by the sender's rank
-		 /* Gather the array position from all proceses, place it in positions */
-		MPI_Gather(&position, numOfPositionOfElem, MPI_INT, &positions, numOfPositionOfElem, MPI_INT, 0, MPI_COMM_WORLD);
-
-		printf("The array of the positions of the element are : \n");
-		for (i = 0; i < numOfPositionOfElem; i++)
-			printf("%d  ", positions[i]);
-
-	}
-
-	system("PAUSE");
 	MPI_Finalize();
-
+	cout << endl;
+	return 0;
 }
